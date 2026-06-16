@@ -563,6 +563,116 @@ code {
   color:var(--t3); font-family:'DM Mono',monospace;
   font-size:11px;
 }
+
+/* Manage Tab */
+.manage-sub-header {
+  font-family:'DM Mono',monospace;
+  font-size:10px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--t3);
+  margin:24px 0 12px; padding-bottom:6px;
+  border-bottom:1px solid var(--border);
+}
+.manage-sub-header:first-of-type { margin-top:0; }
+
+.agent-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:16px 18px;
+  margin-bottom:10px; transition:border-color .15s;
+  animation:slideUp .3s ease both;
+}
+.agent-card:hover { border-color:var(--border2); }
+
+.agent-head {
+  display:flex; align-items:center; gap:10px;
+  margin-bottom:8px;
+}
+.agent-name {
+  font-family:'DM Mono',monospace;
+  font-size:12px; color:var(--cyan); flex-shrink:0;
+}
+.agent-mode {
+  font-family:'DM Mono',monospace;
+  font-size:9px; padding:2px 7px; border-radius:20px;
+  letter-spacing:.06em; text-transform:uppercase;
+}
+.agent-mode-primary { background:rgba(184,245,90,.12); color:var(--lime); border:1px solid rgba(184,245,90,.25); }
+.agent-mode-subagent { background:rgba(90,240,216,.1); color:var(--cyan); border:1px solid rgba(90,240,216,.2); }
+
+.agent-desc {
+  font-size:12px; color:var(--t2); line-height:1.5;
+  margin-bottom:10px;
+}
+
+.agent-meta {
+  display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+}
+.agent-tag {
+  font-family:'DM Mono',monospace;
+  font-size:9px; padding:2px 7px; border-radius:20px;
+  background:var(--s3); color:var(--t3);
+  border:1px solid var(--border); letter-spacing:.03em;
+}
+.agent-tag-dep {
+  color:var(--amber); border-color:rgba(240,192,90,.25);
+  background:rgba(240,192,90,.06);
+}
+.agent-tag-perm {
+  color:var(--rose); border-color:rgba(240,90,122,.2);
+  background:rgba(240,90,122,.05);
+  cursor:help;
+}
+.agent-tag-temp {
+  color:var(--violet); border-color:rgba(160,122,240,.2);
+  background:rgba(160,122,240,.05);
+}
+
+.skill-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:16px 18px;
+  margin-bottom:10px; transition:border-color .15s;
+  animation:slideUp .3s ease both;
+}
+.skill-card:hover { border-color:var(--border2); }
+.skill-name {
+  font-family:'DM Mono',monospace;
+  font-size:12px; color:var(--lime); margin-bottom:6px;
+  display:flex; align-items:center; gap:8px;
+}
+.skill-desc { font-size:12px; color:var(--t2); line-height:1.5; }
+.skill-path {
+  font-family:'DM Mono',monospace;
+  font-size:9px; color:var(--t3); margin-top:6px;
+}
+
+.mcp-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:16px 18px;
+  margin-bottom:10px; transition:border-color .15s;
+  animation:slideUp .3s ease both;
+}
+.mcp-card:hover { border-color:var(--border2); }
+.mcp-head {
+  display:flex; align-items:center; gap:10px;
+  margin-bottom:6px;
+}
+.mcp-name {
+  font-family:'DM Mono',monospace;
+  font-size:12px; color:var(--amber); flex-shrink:0;
+}
+.mcp-type {
+  font-family:'DM Mono',monospace;
+  font-size:9px; padding:2px 7px; border-radius:20px;
+  letter-spacing:.06em; text-transform:uppercase;
+}
+.mcp-local { background:rgba(90,240,216,.1); color:var(--cyan); border:1px solid rgba(90,240,216,.2); }
+.mcp-remote { background:rgba(160,122,240,.1); color:var(--violet); border:1px solid rgba(160,122,240,.2); }
+.mcp-command {
+  font-family:'DM Mono',monospace;
+  font-size:10px; color:var(--t2);
+  background:var(--s3); padding:4px 8px;
+  border-radius:4px; display:inline-block;
+  margin-top:4px;
+}
 </style>
 </head>
 <body>
@@ -581,6 +691,7 @@ code {
     <button class="tbtab active" data-page="journal">Journal</button>
     <button class="tbtab" data-page="memory">Memory</button>
     <button class="tbtab" data-page="env">.Env</button>
+    <button class="tbtab" data-page="manage">Manage</button>
   </div>
 
   <div class="topbar-right">
@@ -604,6 +715,10 @@ code {
     <div class="nav-item" data-page="env">
       <span class="nav-dot"></span> .Env
       <span class="nav-badge" id="nav-env">-</span>
+    </div>
+    <div class="nav-item" data-page="manage">
+      <span class="nav-dot"></span> Manage
+      <span class="nav-badge" id="nav-manage"></span>
     </div>
   </div>
 
@@ -678,6 +793,22 @@ code {
     <div id="env-content"><div class="loading">Scanning .env files...</div></div>
   </div>
 
+  <!-- MANAGE PAGE -->
+  <div class="page" id="page-manage">
+    <div class="page-header">
+      <div>
+        <div class="page-title"><em>Manage</em></div>
+        <div class="page-sub">// agents, skills, and MCP servers</div>
+      </div>
+      <div class="filter-row" id="manage-subtabs">
+        <button class="fbtn active" data-subtab="agents">Agents</button>
+        <button class="fbtn" data-subtab="skills">Skills</button>
+        <button class="fbtn" data-subtab="mcps">MCPs</button>
+      </div>
+    </div>
+    <div id="manage-content"><div class="loading">Loading...</div></div>
+  </div>
+
 </main>
 
 <!-- ── RIGHT SIDEBAR ── -->
@@ -730,15 +861,30 @@ const API = {
   env: () => API.fetch('/api/env'),
   envRead: (path) => API.fetch(`/api/env/read?path=${encodeURIComponent(path)}`),
   envWrite: (path, content) => API.post('/api/env/write', { path, content }),
+  agents: () => API.fetch('/api/agents'),
+  skills: () => API.fetch('/api/skills'),
+  mcp: () => API.fetch('/api/mcp'),
+  agentFile: (id) => API.fetch(`/api/agents/${encodeURIComponent(id)}/file`),
+  saveAgentFile: (id, content) => API.post(`/api/agents/${encodeURIComponent(id)}/file`, { content }),
+  skillFile: (id) => API.fetch(`/api/skills/${encodeURIComponent(id)}/file`),
+  saveSkillFile: (id, content) => API.post(`/api/skills/${encodeURIComponent(id)}/file`, { content }),
+  mcpConfig: () => API.fetch('/api/mcp/config'),
+  saveMcpConfig: (content) => API.post('/api/mcp/config', { content }),
 };
 
 // ─── NAVIGATION ───────────────────────────────────────
 
 function navigate(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
+  const pageEl = document.getElementById('page-' + page);
+  if (pageEl) pageEl.classList.add('active');
   document.querySelectorAll('.tbtab').forEach(t => t.classList.toggle('active', t.dataset.page === page));
   document.querySelectorAll('.nav-item[data-page]').forEach(n => n.classList.toggle('active', n.dataset.page === page));
+  // Trigger manage sub-tab render when navigating to manage page
+  if (page === 'manage') {
+    const activeSubtab = document.querySelector('#manage-subtabs .fbtn.active')?.dataset.subtab || 'agents';
+    renderManageSubtab(activeSubtab);
+  }
 }
 
 document.querySelectorAll('.tbtab[data-page]').forEach(btn => {
@@ -746,6 +892,15 @@ document.querySelectorAll('.tbtab[data-page]').forEach(btn => {
 });
 document.querySelectorAll('.nav-item[data-page]').forEach(item => {
   item.addEventListener('click', () => navigate(item.dataset.page));
+});
+
+// Manage sub-tab switching
+document.querySelectorAll('#manage-subtabs .fbtn[data-subtab]').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#manage-subtabs .fbtn[data-subtab]').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    renderManageSubtab(this.dataset.subtab);
+  });
 });
 
 // ─── LIVE DATE ────────────────────────────────────────
@@ -1070,6 +1225,326 @@ async function saveEnvFile(idx) {
   }
 }
 
+// ─── MANAGE TAB DATA ───────────────────────────────────
+
+const HOME_DIR = '/home/blackbox';
+let manageData = { agents: [], skills: [], mcps: [] };
+
+function renderManageSubtab(subtab) {
+  const container = document.getElementById('manage-content');
+  if (subtab === 'agents') renderManageAgents(container);
+  else if (subtab === 'skills') renderManageSkills(container);
+  else if (subtab === 'mcps') renderManageMcps(container);
+}
+
+// ─── AGENT EDITORS ──────────────────────────────────────
+
+async function toggleAgentEditor(id, btn) {
+  const editorId = 'agent-editor-' + id.replace(/[^a-zA-Z0-9]/g, '-');
+  const editor = document.getElementById(editorId);
+  const isOpen = editor.classList.contains('open');
+  if (!isOpen) {
+    // Lazy-load content
+    const textarea = editor.querySelector('textarea');
+    if (!textarea.value) {
+      btn.textContent = 'Loading...';
+      try {
+        const data = await API.agentFile(id);
+        textarea.value = data.content;
+      } catch (e) {
+        textarea.value = '// Error loading file: ' + e.message;
+      }
+      btn.textContent = 'Edit';
+    }
+    editor.classList.add('open');
+    textarea.focus();
+  } else {
+    editor.classList.remove('open');
+  }
+}
+
+function closeAgentEditor(btn) {
+  const editor = btn.closest('.mfile-editor');
+  if (editor) editor.classList.remove('open');
+}
+
+async function saveAgentFile(id, btn) {
+  const editor = btn.closest('.mfile-editor');
+  const textarea = editor.querySelector('textarea');
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+  try {
+    await API.saveAgentFile(id, textarea.value);
+    btn.textContent = 'Saved ✓';
+    setTimeout(() => {
+      btn.textContent = 'Save';
+      btn.disabled = false;
+      editor.classList.remove('open');
+      loadManage();
+    }, 800);
+  } catch (e) {
+    btn.textContent = 'Error!';
+    console.error(e);
+  }
+}
+
+// ─── SKILL EDITORS ──────────────────────────────────────
+
+async function toggleSkillEditor(id, btn) {
+  const editorId = 'skill-editor-' + id.replace(/[^a-zA-Z0-9]/g, '-');
+  const editor = document.getElementById(editorId);
+  const isOpen = editor.classList.contains('open');
+  if (!isOpen) {
+    const textarea = editor.querySelector('textarea');
+    if (!textarea.value) {
+      btn.textContent = 'Loading...';
+      try {
+        const data = await API.skillFile(id);
+        textarea.value = data.content;
+      } catch (e) {
+        textarea.value = '// Error loading file: ' + e.message;
+      }
+      btn.textContent = 'Edit';
+    }
+    editor.classList.add('open');
+    textarea.focus();
+  } else {
+    editor.classList.remove('open');
+  }
+}
+
+function closeSkillEditor(btn) {
+  const editor = btn.closest('.mfile-editor');
+  if (editor) editor.classList.remove('open');
+}
+
+async function saveSkillFile(id, btn) {
+  const editor = btn.closest('.mfile-editor');
+  const textarea = editor.querySelector('textarea');
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+  try {
+    await API.saveSkillFile(id, textarea.value);
+    btn.textContent = 'Saved ✓';
+    setTimeout(() => {
+      btn.textContent = 'Save';
+      btn.disabled = false;
+      editor.classList.remove('open');
+      loadManage();
+    }, 800);
+  } catch (e) {
+    btn.textContent = 'Error!';
+    console.error(e);
+  }
+}
+
+// ─── MCP CONFIG EDITOR ──────────────────────────────────
+
+async function toggleMcpEditor(btn) {
+  const editor = document.getElementById('mcp-editor');
+  const isOpen = editor.classList.contains('open');
+  if (!isOpen) {
+    const textarea = editor.querySelector('textarea');
+    if (!textarea.value) {
+      btn.textContent = 'Loading...';
+      try {
+        const data = await API.mcpConfig();
+        textarea.value = data.content;
+      } catch (e) {
+        textarea.value = '// Error loading config: ' + e.message;
+      }
+      btn.textContent = 'Edit config';
+    }
+    editor.classList.add('open');
+    textarea.focus();
+  } else {
+    editor.classList.remove('open');
+  }
+}
+
+function closeMcpEditor(btn) {
+  const editor = document.getElementById('mcp-editor');
+  if (editor) editor.classList.remove('open');
+}
+
+async function saveMcpConfigFile(btn) {
+  const editor = document.getElementById('mcp-editor');
+  const textarea = editor.querySelector('textarea');
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+  try {
+    await API.saveMcpConfig(textarea.value);
+    btn.textContent = 'Saved ✓';
+    setTimeout(() => {
+      btn.textContent = 'Save';
+      btn.disabled = false;
+      editor.classList.remove('open');
+      loadManage();
+    }, 800);
+  } catch (e) {
+    btn.textContent = 'Error!';
+    console.error(e);
+  }
+}
+
+// ─── RENDER AGENTS ──────────────────────────────────────
+
+function renderManageAgents(container) {
+  const agents = manageData.agents;
+  if (!agents.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">🤖</div>No agents found<br><span style="color:var(--t3);font-size:11px">~/.opencode/agent/ is empty or unreadable</span></div>`;
+    return;
+  }
+
+  const primary = agents.filter(a => a.mode === 'primary');
+  const subagents = agents.filter(a => a.mode !== 'primary');
+
+  let html = '';
+
+  if (primary.length) {
+    html += `<div class="manage-sub-header">Primary Agents</div>`;
+    primary.forEach((a, i) => {
+      html += renderAgentCard(a, i);
+    });
+  }
+
+  if (subagents.length) {
+    html += `<div class="manage-sub-header">Subagents</div>`;
+    subagents.forEach((a, i) => {
+      html += renderAgentCard(a, i);
+    });
+  }
+
+  container.innerHTML = html;
+}
+
+function renderAgentCard(a, idx) {
+  const modeClass = a.mode === 'primary' ? 'agent-mode-primary' : 'agent-mode-subagent';
+  const modeLabel = a.mode === 'primary' ? 'primary' : 'subagent';
+  const tempStr = a.temperature != null ? a.temperature : '—';
+  const deps = a.dependencies || [];
+  const permEntries = a.permissions ? Object.entries(a.permissions) : [];
+
+  let tagsHtml = '';
+  if (tempStr !== '—') {
+    tagsHtml += `<span class="agent-tag agent-tag-temp" title="Temperature">temp ${tempStr}</span>`;
+  }
+  permEntries.forEach(([action, rules]) => {
+    if (typeof rules === 'object' && Object.keys(rules).length) {
+      tagsHtml += `<span class="agent-tag agent-tag-perm" title="${action}: ${Object.keys(rules).length} rules">${action}</span>`;
+    }
+  });
+  deps.forEach(d => {
+    tagsHtml += `<span class="agent-tag agent-tag-dep">${escHtml(d)}</span>`;
+  });
+
+  const catLabel = a.category || 'unknown';
+  const safeId = a.id.replace(/[^a-zA-Z0-9]/g, '-');
+  return `
+    <div class="agent-card" style="animation-delay:${idx * 0.04}s">
+      <div class="agent-head">
+        <span class="agent-name">${escHtml(a.name)}</span>
+        <span class="agent-mode ${modeClass}">${modeLabel}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--t3);margin-left:auto">${escHtml(catLabel)}</span>
+      </div>
+      <div class="agent-desc">${escHtml(a.description || 'No description')}</div>
+      <div class="agent-meta">${tagsHtml}</div>
+      <div class="mfile-actions" style="margin-top:10px">
+        <button class="btn btn-edit" onclick="toggleAgentEditor('${escHtml(a.id)}', this)">Edit</button>
+      </div>
+      <div class="mfile-editor" id="agent-editor-${safeId}">
+        <textarea placeholder="Loading agent file..."></textarea>
+        <div class="editor-actions">
+          <button class="btn btn-ghost" onclick="closeAgentEditor(this)">Cancel</button>
+          <button class="btn btn-primary" onclick="saveAgentFile('${escHtml(a.id)}', this)">Save</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ─── RENDER SKILLS ──────────────────────────────────────
+
+function renderManageSkills(container) {
+  const skills = manageData.skills;
+  if (!skills.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">🧰</div>No skills found<br><span style="color:var(--t3);font-size:11px">~/.opencode/skills/ is empty or unreadable</span></div>`;
+    return;
+  }
+
+  let html = '';
+  skills.forEach((s, i) => {
+    const safeId = s.id.replace(/[^a-zA-Z0-9]/g, '-');
+    html += `
+      <div class="skill-card" style="animation-delay:${i * 0.04}s">
+        <div class="skill-name">
+          <span>${escHtml(s.name)}</span>
+          ${s.hasSkillMd ? `<span style="font-family:'DM Mono',monospace;font-size:8px;padding:1px 5px;border-radius:10px;background:var(--s3);color:var(--t3);border:1px solid var(--border)">SKILL.md</span>` : ''}
+        </div>
+        <div class="skill-desc">${escHtml(s.description || 'No description')}</div>
+        <div class="skill-path">${escHtml(s.path.replace(HOME_DIR, '~'))}</div>
+        ${s.hasSkillMd ? `
+        <div class="mfile-actions" style="margin-top:10px">
+          <button class="btn btn-edit" onclick="toggleSkillEditor('${escHtml(s.id)}', this)">Edit</button>
+        </div>
+        <div class="mfile-editor" id="skill-editor-${safeId}">
+          <textarea placeholder="Loading SKILL.md..."></textarea>
+          <div class="editor-actions">
+            <button class="btn btn-ghost" onclick="closeSkillEditor(this)">Cancel</button>
+            <button class="btn btn-primary" onclick="saveSkillFile('${escHtml(s.id)}', this)">Save</button>
+          </div>
+        </div>` : ''}
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+// ─── RENDER MCPs ────────────────────────────────────────
+
+function renderManageMcps(container) {
+  const servers = manageData.mcps?.servers || [];
+  let html = '';
+
+  if (servers.length) {
+    html += `<div class="manage-sub-header">Configured Servers</div>`;
+    servers.forEach((s, i) => {
+      const typeClass = s.type === 'remote' ? 'mcp-remote' : 'mcp-local';
+      const typeLabel = s.type || 'local';
+      const cmdOrUrl = s.command || s.url || '';
+      html += `
+        <div class="mcp-card" style="animation-delay:${i * 0.04}s">
+          <div class="mcp-head">
+            <span class="mcp-name">${escHtml(s.name)}</span>
+            <span class="mcp-type ${typeClass}">${typeLabel}</span>
+            <span style="margin-left:auto;font-size:10px;color:${s.enabled !== false ? 'var(--lime)' : 'var(--t3)'}">${s.enabled !== false ? 'enabled' : 'disabled'}</span>
+          </div>
+          <div class="mcp-command">${escHtml(cmdOrUrl)}</div>
+        </div>
+      `;
+    });
+  } else {
+    html += `<div class="empty" style="padding:30px 20px"><div class="empty-icon">🔌</div>No MCP servers configured<br><span style="color:var(--t3);font-size:11px">Add one with: <code style="color:var(--lime)">opencode mcp add &lt;name&gt; &lt;command&gt;</code></span></div>`;
+  }
+
+  // Config editor
+  html += `
+    <div class="manage-sub-header" style="margin-top:20px">Config File</div>
+    <div class="mfile-actions" style="margin-bottom:10px">
+      <button class="btn btn-edit" onclick="toggleMcpEditor(this)">Edit config</button>
+    </div>
+    <div class="mfile-editor" id="mcp-editor">
+      <textarea placeholder="Loading opencode.json..."></textarea>
+      <div class="editor-actions">
+        <button class="btn btn-ghost" onclick="closeMcpEditor(this)">Cancel</button>
+        <button class="btn btn-primary" onclick="saveMcpConfigFile(this)">Save</button>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
 // ─── RENDER STATS ──────────────────────────────────────
 
 function renderStats(stats) {
@@ -1230,6 +1705,21 @@ async function loadEnv() {
   }
 }
 
+async function loadManage() {
+  try {
+    const [agents, skills, mcps] = await Promise.all([API.agents(), API.skills(), API.mcp()]);
+    manageData = { agents, skills, mcps };
+    document.getElementById('nav-manage').textContent = agents.length + skills.length + (mcps.servers || []).length;
+    // Re-render current sub-tab if manage page is active
+    const activeSubtab = document.querySelector('#manage-subtabs .fbtn.active')?.dataset.subtab;
+    if (activeSubtab && document.getElementById('page-manage').classList.contains('active')) {
+      renderManageSubtab(activeSubtab);
+    }
+  } catch (e) {
+    console.error('Manage load error:', e);
+  }
+}
+
 async function loadStats() {
   try {
     const stats = await API.stats();
@@ -1249,7 +1739,7 @@ async function loadQuickMemory() {
 }
 
 async function init() {
-  await Promise.all([loadSessions(), loadMemory(), loadEnv(), loadStats(), loadQuickMemory()]);
+  await Promise.all([loadSessions(), loadMemory(), loadEnv(), loadStats(), loadQuickMemory(), loadManage()]);
 }
 
 // ─── REAL-TIME EVENTS (SSE) ─────────────────────────────
@@ -1258,18 +1748,28 @@ async function init() {
 const events = new EventSource("/api/events")
 
 events.addEventListener("connected", () => {
+  // Skip initial load if user is actively editing
+  if (document.activeElement?.closest('.mfile-editor, .env-body, .env-editor') ||
+      document.querySelector('textarea:focus')) return
   init()
 })
 
 events.addEventListener("tick", () => {
+  // Skip all DOM-refreshing loads while the user is editing
+  if (
+    document.activeElement?.closest('.mfile-editor, .env-body, .env-editor') ||
+    document.querySelector('textarea:focus')
+  ) return
   loadStats()
   loadSessions()
   loadQuickMemory()
+  loadManage()
 })
 
 events.addEventListener("memory.updated", () => {
   if (!document.querySelector('.mfile-editor.open')) {
     loadMemory()
+    loadQuickMemory()
   }
 })
 
@@ -1278,6 +1778,13 @@ events.addEventListener("env.updated", () => {
   const editing = Array.from(textareas).some(t => !t.readOnly)
   if (!editing) {
     loadEnv()
+  }
+})
+
+events.addEventListener("manage.updated", () => {
+  const openEditors = document.querySelectorAll('#page-manage .mfile-editor.open')
+  if (!openEditors.length) {
+    loadManage()
   }
 })
 

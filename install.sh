@@ -2,6 +2,28 @@
 # DevJournal · OpenCode Plugin Installer
 set -e
 
+# ── Flags ───────────────────────────────────────────────────
+case "${1:-}" in
+  --uninstall|-u)
+    SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd || echo "")"
+    if [ -f "$SCRIPT_DIR/scripts/uninstall.sh" ]; then
+      exec bash "$SCRIPT_DIR/scripts/uninstall.sh"
+    else
+      echo "Error: scripts/uninstall.sh not found"
+      exit 1
+    fi
+    ;;
+  --update|-U)
+    SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd || echo "")"
+    if [ -f "$SCRIPT_DIR/scripts/update.sh" ]; then
+      exec bash "$SCRIPT_DIR/scripts/update.sh"
+    else
+      echo "Error: scripts/update.sh not found"
+      exit 1
+    fi
+    ;;
+esac
+
 # ── Config ──────────────────────────────────────────────────
 REPO="anas1412/opencode-devjournal"
 BRANCH="main"

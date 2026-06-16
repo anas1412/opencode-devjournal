@@ -503,6 +503,289 @@ app.put("/api/env/write", async (req, res) => {
   }
 })
 
+// ─── FRONTMATTER PARSER (simple YAML for agent/skill .md files) ──
+
+function parseFrontmatter(content) {
+  const match = content.match(/^---\n([\s\S]*?)\n---/)
+  if (!match) return null
+  const yaml = match[1]
+  const result = {}
+  const lines = yaml.split("\n")
+  let currentKey = null
+  let currentObj = null
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+    const indent = line.length - line.trimStart().length
+
+    if (indent === 0 && trimmed.includes(":")) {
+      const colonIdx = trimmed.indexOf(":")
+      const key = trimmed.slice(0, colonIdx).trim()
+      const val = trimmed.slice(colonIdx + 1).trim()
+      if (val === "") {
+        // Start a nested object
+        currentKey = key
+        result[currentKey] = {}
+        currentObj = result[currentKey]
+      } else {
+        result[key] = parseYamlValue(val)
+        currentKey = null
+        currentObj = null
+      }
+    } else if (indent > 0 && currentObj && trimmed.includes(":")) {
+      const colonIdx = trimmed.indexOf(":")
+      const key = trimmed.slice(0, colonIdx).trim()
+      const val = trimmed.slice(colonIdx + 1).trim()
+      currentObj[key] = parseYamlValue(val)
+    }
+  }
+  return result
+}
+
+function parseYamlValue(val) {
+  if (val === "true") return true
+  if (val === "false") return false
+  const num = Number(val)
+  if (!isNaN(num) && val !== "") return num
+  // Remove surrounding quotes
+  if (
+    (val.startsWith('"') && val.endsWith('"')) ||
+    (val.startsWith("'") && val.endsWith("'"))
+  ) {
+    return val.slice(1, -1)
+  }
+  return val
+}
+
+// ─── API: AGENTS ────────────────────────────────────────
+
+app.get("/api/agents", async (req, res) => {
+  try {
+    const metadataPath = path.join(HOME, ".opencode", "config", "agent-metadata.json")
+    let metadata = { agents: {} }
+    try {
+      metadata = JSON.parse(await fs.readFile(metadataPath, "utf-8"))
+    } catch {
+      /* metadata is optional */
+    }
+
+    const agentDir = path.join(HOME, ".opencode", "agent")
+    const agents = []
+
+    async function scanAgentDir(dirPath, category) {
+      let entries
+      try {
+        entries = await fs.readdir(dirPath, { withFileTypes: true })
+      } catch {
+        return
+      }
+      for (const entry of entries) {
+        const fullPath = path.join(dirPath, entry.name)
+        if (entry.isDirectory()) {
+          await scanAgentDir(fullPath, entry.name)
+        } else if (entry.name.endsWith(".md")) {
+          try {
+            const content = await fs.readFile(fullPath, "utf-8")
+            const fm = parseFrontmatter(content)
+            if (fm && fm.name) {
+              const agentId = entry.name.replace(/\.md$/, "")
+              const meta = metadata.agents?.[agentId] || {}
+              agents.push({
+                id: agentId,
+                name: fm.name,
+                description: fm.description || "",
+                mode: fm.mode || "subagent",
+                temperature: fm.temperature ?? null,
+                permissions: fm.permission || {},
+                category: meta.category || category || "unknown",
+                type: meta.type || (fm.mode === "primary" ? "agent" : "subagent"),
+                tags: meta.tags || [],
+                dependencies: meta.dependencies || [],
+              })
+            }
+          } catch {
+            // skip unreadable files
+          }
+        }
+      }
+    }
+
+    await scanAgentDir(agentDir, "")
+    res.json(agents)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// ─── API: SKILLS ────────────────────────────────────────
+
+app.get("/api/skills", async (req, res) => {
+  try {
+    const skillsDir = path.join(HOME, ".opencode", "skills")
+    const skills = []
+
+    let entries
+    try {
+      entries = await fs.readdir(skillsDir, { withFileTypes: true })
+    } catch {
+      return res.json(skills)
+    }
+
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue
+      const skillPath = path.join(skillsDir, entry.name)
+      const skillMdPath = path.join(skillPath, "SKILL.md")
+      let name = entry.name
+      let description = ""
+
+      try {
+        const content = await fs.readFile(skillMdPath, "utf-8")
+        const fm = parseFrontmatter(content)
+        if (fm) {
+          name = fm.name || name
+          description = fm.description || ""
+        }
+      } catch {
+        // No SKILL.md — use directory name
+      }
+
+      skills.push({
+        id: entry.name,
+        name,
+        description,
+        path: skillPath,
+        hasSkillMd: true,
+      })
+    }
+
+    res.json(skills)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// ─── API: MCP ────────────────────────────────────────────
+
+app.get("/api/mcp", async (req, res) => {
+  try {
+    const configPath = path.join(CONFIG_DIR, "opencode.json")
+    let servers = []
+    try {
+      const config = JSON.parse(await fs.readFile(configPath, "utf-8"))
+      servers = config.mcp?.servers || []
+    } catch {
+      // Config not read or no mcp key
+    }
+    res.json({ servers, home: HOME })
+  } catch (e) {
+    res.json({ servers: [], home: HOME })
+  }
+})
+
+// ─── MANAGE TAB: FILE READ/WRITE ───────────────────────
+
+// Helper: find an agent .md file by ID in the agent tree
+async function findAgentFile(id) {
+  const agentDir = path.join(HOME, ".opencode", "agent")
+  async function search(dir) {
+    const entries = await fs.readdir(dir, { withFileTypes: true })
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name)
+      if (entry.isDirectory()) {
+        const found = await search(fullPath)
+        if (found) return found
+      } else if (entry.name === id + ".md") {
+        return fullPath
+      }
+    }
+    return null
+  }
+  return search(agentDir)
+}
+
+app.get("/api/agents/:id/file", async (req, res) => {
+  try {
+    const filePath = await findAgentFile(req.params.id)
+    if (!filePath) return res.status(404).json({ error: "Agent not found" })
+    const content = await fs.readFile(filePath, "utf-8")
+    const stat = await fs.stat(filePath)
+    res.json({ id: req.params.id, content, path: filePath, updated: stat.mtime })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.put("/api/agents/:id/file", async (req, res) => {
+  try {
+    const filePath = await findAgentFile(req.params.id)
+    if (!filePath) return res.status(404).json({ error: "Agent not found" })
+    if (req.body.content === undefined)
+      return res.status(400).json({ error: "content required" })
+    await fs.writeFile(filePath, req.body.content, "utf-8")
+    broadcast("manage.updated", { type: "agent", id: req.params.id })
+    res.json({ success: true })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.get("/api/skills/:id/file", async (req, res) => {
+  try {
+    const skillMdPath = path.join(HOME, ".opencode", "skills", req.params.id, "SKILL.md")
+    if (!skillMdPath.startsWith(path.join(HOME, ".opencode", "skills")))
+      return res.status(403).json({ error: "Invalid path" })
+    const content = await fs.readFile(skillMdPath, "utf-8")
+    const stat = await fs.stat(skillMdPath)
+    res.json({ id: req.params.id, content, path: skillMdPath, updated: stat.mtime })
+  } catch (e) {
+    res.status(404).json({ error: "Skill not found" })
+  }
+})
+
+app.put("/api/skills/:id/file", async (req, res) => {
+  try {
+    const skillMdPath = path.join(HOME, ".opencode", "skills", req.params.id, "SKILL.md")
+    if (!skillMdPath.startsWith(path.join(HOME, ".opencode", "skills")))
+      return res.status(403).json({ error: "Invalid path" })
+    if (req.body.content === undefined)
+      return res.status(400).json({ error: "content required" })
+    await fs.writeFile(skillMdPath, req.body.content, "utf-8")
+    broadcast("manage.updated", { type: "skill", id: req.params.id })
+    res.json({ success: true })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.get("/api/mcp/config", async (req, res) => {
+  try {
+    const configPath = path.join(CONFIG_DIR, "opencode.json")
+    const content = await fs.readFile(configPath, "utf-8")
+    res.json({ content, path: configPath })
+  } catch (e) {
+    res.status(404).json({ error: "Config not found" })
+  }
+})
+
+app.put("/api/mcp/config", async (req, res) => {
+  try {
+    const configPath = path.join(CONFIG_DIR, "opencode.json")
+    if (req.body.content === undefined)
+      return res.status(400).json({ error: "content required" })
+    // Validate it's parseable JSON
+    JSON.parse(req.body.content)
+    await fs.writeFile(configPath, req.body.content, "utf-8")
+    broadcast("manage.updated", { type: "mcp" })
+    res.json({ success: true })
+  } catch (e) {
+    if (e instanceof SyntaxError) {
+      return res.status(400).json({ error: "Invalid JSON" })
+    }
+    res.status(500).json({ error: e.message })
+  }
+})
+
 // ─── SSE / REAL-TIME EVENTS ──────────────────────────────
 
 const sseClients = new Set()

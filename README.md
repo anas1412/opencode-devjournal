@@ -54,6 +54,46 @@ The server runs while OpenCode is open and shuts down when OpenCode closes. Only
 
 ---
 
+## Update
+
+```bash
+# If installed via opencode plugin (recommended)
+opencode plugin opencode-devjournal -f
+
+# Or using the install script from any source directory
+bash install.sh --update
+```
+
+This re-downloads the latest package, rebuilds if needed, and restarts the server. Memory files are preserved.
+
+---
+
+## Uninstall
+
+```bash
+# From the project directory
+bash install.sh --uninstall
+
+# Or directly
+bash scripts/uninstall.sh
+```
+
+**What's removed:**
+| Artifact | Location |
+|----------|----------|
+| Plugin config | `~/.config/opencode/opencode.json` — plugin entry removed |
+| Package cache | `~/.cache/opencode/packages/opencode-devjournal@latest/` |
+| Skill symlink | `~/.opencode/skills/devjournal` |
+| Command file | `~/.opencode/command/devjournal.md` |
+| Downloaded source (if curl-installed) | `~/.local/share/opencode-devjournal/` |
+| PID file | `~/.config/opencode/devjournal.pid` |
+| Server process | Port 4173 killed |
+
+**Preserved:**
+- Memory files in `~/.config/opencode/memory/` — your environment and preferences are kept. Delete manually if you want them gone.
+
+---
+
 ## Usage
 
 | Action | How |

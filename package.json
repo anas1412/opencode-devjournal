@@ -1,6 +1,6 @@
 {
   "name": "opencode-devjournal",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "OpenCode Memory Dashboard — session timeline, memory files, .env editor",
   "type": "module",
   "main": "dist/index.js",
