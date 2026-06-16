@@ -1,112 +1,85 @@
-# DevJournal · OpenCode Memory Dashboard
+# DevJournal
 
-A plugin for [OpenCode](https://opencode.ai) that surfaces what's been happening across your sessions. Shows a timeline of recent sessions, persistent memory files (environment, preferences), and lets you edit `.env` files — all in a terminal-meets-editorial dashboard.
+An OpenCode plugin that gives you a real-time dashboard of everything happening across your sessions. Timeline, persistent memory, and .env management — served as a web UI alongside your editor.
 
-![status](https://img.shields.io/badge/status-beta-5af0d8?style=flat)
-![plugin](https://img.shields.io/badge/opencode-plugin-b8f55a?style=flat)
+---
+
+## Why
+
+OpenCode sessions are ephemeral by design. DevJournal adds a persistent layer:
+
+- **See your work** — a timeline of every session across all your projects, grouped by day, with what you were working on and what's left to do.
+- **Keep context between sessions** — environment specs and coding preferences stored as markdown files that OpenCode reads automatically. Edit them from the dashboard.
+- **Manage .env files** — find, view, and edit .env files across your projects without leaving the browser.
+
+Install once. OpenCode handles the rest.
+
+---
+
+## Features
+
+**Journal** — every session in `~/.tmp/sessions/` appears on the timeline. Each card shows the title, project, current request, components, and exit criteria progress. Sessions are grouped by day.
+
+**Memory** — two markdown files in `~/.config/opencode/memory/`:
+- `environment.md` — your system setup, runtime versions, shell, editor
+- `preferences.md` — coding style rules, formatting conventions
+
+Both are loaded by OpenCode every session. Edit them from the dashboard.
+
+**.Env Editor** — scans your projects for `.env` files, lists them with variable counts, and lets you view or edit them inline.
+
+**Activity overview** — left sidebar shows weekly stats (sessions, projects, files touched). Right sidebar has a 28-day activity heatmap and sessions-per-day chart.
 
 ---
 
 ## Install
 
-### Prerequisites
-- Node.js 18+
-- [OpenCode](https://opencode.ai) installed
+Requires [OpenCode](https://opencode.ai) and Node.js 18+.
 
-### From npm (recommended)
 ```bash
 opencode plugin opencode-devjournal
 ```
 
-Or add it to your `opencode.json` directly:
+Or add to `~/.config/opencode/opencode.json`:
+
 ```json
 {
   "plugin": ["opencode-devjournal"]
 }
 ```
-OpenCode installs and loads it automatically on next start.
 
-### From GitHub (no npm needed)
-```bash
-curl -fsSL https://raw.githubusercontent.com/anas1412/opencode-devjournal/main/install.sh | bash
-```
-Downloads the plugin, installs dependencies, builds, registers in opencode.json.
+When OpenCode starts, it downloads the plugin and launches the dashboard server automatically. Open `http://localhost:4173` in your browser.
 
-### Manual
-```bash
-cd opencode-devjournal
-bash install.sh
-```
+The server runs while OpenCode is open and shuts down when OpenCode closes. Only one instance runs at a time.
+
+---
+
+## Usage
+
+| Action | How |
+|--------|-----|
+| Open dashboard | `http://localhost:4173` (auto-started with OpenCode) |
+| Switch tabs | Topbar or sidebar — Journal, Memory, .Env |
+| Edit a memory file | Click **Edit** on any file, make changes, **Save** |
+| View .env contents | Click a project, then **Load content** |
+| Edit .env | Click **Edit**, make changes, **Save** |
+| Log a note (from OpenCode) | Use the `devjournal` tool → `action: log` |
 
 ---
 
 ## How it works
 
-Install it once. That's it.
+DevJournal has two parts:
 
-- **Auto-start** — The dashboard server starts when OpenCode opens, stops when it closes.
-- **Singleton** — Only one DevJournal instance runs at a time. PID file at `~/.config/opencode/devjournal.pid`.
-- **Dashboard** — Open `http://localhost:4173` in your browser while OpenCode is running.
+1. **Plugin** (`dist/index.js`) — loaded by OpenCode. Starts/ stops the dashboard server, hooks into `session.created` events for auto-logging, and registers a `devjournal` tool (stop, status, log).
+2. **Server** (`server.cjs`) — an Express app that scans session files, reads/ writes memory markdown, and browses .env files. Serves the dashboard at port 4173. Manages a PID file at `~/.config/opencode/devjournal.pid` to enforce a single instance.
 
-No `devjournal start` commands. No manual server management. Install and forget.
-
----
-
-## What you get
-
-| Tab | What you see |
-|-----|-------------|
-| **Journal** | Timeline of all sessions, grouped by day, across every project in `~/`. Each card shows the session title, project, current request, and exit criteria. |
-| **Memory** | Editable markdown files (`environment.md`, `preferences.md`) stored in `~/.config/opencode/memory/`. OpenCode loads these every session. |
-| **.Env** | All `.env` files found across your projects. View, edit, and save changes. |
-
-### Dashboard
-- **Left sidebar** — weekly stats (sessions, projects, tasks, files), project tags
-- **Right sidebar** — 28-day activity heatmap + sessions/day chart
-- **Topbar / sidebar** — switch between Journal, Memory, .Env
+Memory files live at `~/.config/opencode/memory/`. Sessions are scanned from `~/*/.tmp/sessions/*/context.md`.
 
 ---
 
-## How it's built
+## Links
 
-```
-~/project-a/.tmp/sessions/{id}/context.md   ──┐
-~/project-b/.tmp/sessions/{id}/context.md   ──┤  server.js scans & parses
-~/project-c/.tmp/sessions/{id}/context.md   ──┘       ↓
-                                            REST API ←─→ Dashboard UI
-~/.config/opencode/memory/*.md              ──┘
-~/*/.env                                    ──┘
-```
-
-Two parts:
-
-1. **Dashboard server** (`server.js`) — Express server that scans sessions, reads/writes memory files, and edits .env files. Serves the dashboard HTML. PID-tracked for singleton enforcement.
-2. **OpenCode plugin** (`dist/index.js`) — Loaded by OpenCode. Auto-starts the server on load, auto-stops on dispose. Registers a `devjournal` tool (stop/status/log) and hooks into `session.created` events for auto-logging.
-
-### Files
-
-| File | Role |
-|------|------|
-| `server.js` | Express API + static file server, writes PID file |
-| `devjournal.html` | Dashboard UI (single file, embedded CSS+JS) |
-| `src/index.ts` | Plugin source — auto-start/stop, tools, event hooks |
-| `dist/index.js` | Compiled plugin (auto-built) |
-| `install.sh` | Set up everything — memory dir, deps, plugin registration |
-
----
-
-## Dev
-
-```bash
-npm run build    # rebuild plugin after editing src/index.ts
-npm start        # start dashboard standalone (without OpenCode)
-bash install.sh  # full reinstall
-```
-
----
-
-## Design
-
-Dark background (`#0e0f11`), DM Mono for code accents, DM Serif Display for headings, DM Sans for body. Grain overlay and a lime/cyan/amber/rose palette — hacker's field-notes meets clean magazine layout.
-
-Colors: `--lime: #b8f55a` · `--cyan: #5af0d8` · `--amber: #f0c05a` · `--rose: #f05a7a` · `--violet: #a07af0`
+- [GitHub](https://github.com/anas1412/opencode-devjournal)
+- [npm](https://www.npmjs.com/package/opencode-devjournal)
+- [OpenCode](https://opencode.ai)
