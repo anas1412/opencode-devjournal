@@ -420,6 +420,7 @@ app.put("/api/memory/:name", async (req, res) => {
 
     await fs.mkdir(MEMORY_DIR, { recursive: true })
     await fs.writeFile(filePath, req.body.content, "utf-8")
+    broadcast("memory.updated", { name: safeName })
     res.json({ success: true })
   } catch (e) {
     res.status(500).json({ error: e.message })
@@ -495,11 +496,40 @@ app.put("/api/env/write", async (req, res) => {
       return res.status(403).json({ error: "Access denied" })
 
     await fs.writeFile(filePath, content, "utf-8")
+    broadcast("env.updated", { path: filePath })
     res.json({ success: true, path: filePath })
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
 })
+
+// ─── SSE / REAL-TIME EVENTS ──────────────────────────────
+
+const sseClients = new Set()
+
+function broadcast(event, data) {
+  const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
+  for (const client of sseClients) {
+    client.write(msg)
+  }
+}
+
+app.get("/api/events", (req, res) => {
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
+  })
+  res.write("event: connected\ndata: {}\n\n")
+
+  sseClients.add(res)
+  req.on("close", () => sseClients.delete(res))
+})
+
+// Heartbeat every 10s — triggers client to refresh sessions + stats
+setInterval(() => {
+  broadcast("tick", { time: Date.now() })
+}, 10000)
 
 // ─── SERVE DASHBOARD ────────────────────────────────────
 

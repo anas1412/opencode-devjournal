@@ -1252,10 +1252,40 @@ async function init() {
   await Promise.all([loadSessions(), loadMemory(), loadEnv(), loadStats(), loadQuickMemory()]);
 }
 
-init();
+// ─── REAL-TIME EVENTS (SSE) ─────────────────────────────
+// Server pushes events instead of client polling.
 
-// Auto-refresh stats every 30s
-setInterval(loadStats, 30000);
+const events = new EventSource("/api/events")
+
+events.addEventListener("connected", () => {
+  init()
+})
+
+events.addEventListener("tick", () => {
+  loadStats()
+  loadSessions()
+  loadQuickMemory()
+})
+
+events.addEventListener("memory.updated", () => {
+  if (!document.querySelector('.mfile-editor.open')) {
+    loadMemory()
+  }
+})
+
+events.addEventListener("env.updated", () => {
+  const textareas = document.querySelectorAll('textarea[id^="env-content-"]')
+  const editing = Array.from(textareas).some(t => !t.readOnly)
+  if (!editing) {
+    loadEnv()
+  }
+})
+
+// EventSource reconnects automatically on error, but reload if it stays dead
+events.addEventListener("error", () => {
+  events.close()
+  setTimeout(() => window.location.reload(), 30000)
+})
 </script>
 </body>
 </html>
