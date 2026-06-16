@@ -1,6 +1,6 @@
 # DevJournal
 
-An OpenCode plugin that gives you a real-time dashboard of everything happening across your sessions. Timeline, persistent memory, and .env management — served as a web UI alongside your editor.
+An OpenCode plugin that surfaces everything happening across your sessions in a single dashboard. Timeline, persistent memory, and .env management — served as a web UI alongside your editor.
 
 ---
 
