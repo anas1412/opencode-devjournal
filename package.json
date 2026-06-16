@@ -6,9 +6,11 @@
   "main": "dist/index.js",
   "files": [
     "dist/",
+    "scripts/",
     "server.cjs",
     "devjournal.html",
     "install.sh",
+    "README.md",
     "package.json"
   ],
   "scripts": {
