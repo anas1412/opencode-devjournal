@@ -13,22 +13,26 @@ A plugin for [OpenCode](https://opencode.ai) that surfaces what's been happening
 - Node.js 18+
 - [OpenCode](https://opencode.ai) installed
 
-### One-liner (recommended)
+### From npm (recommended)
 ```bash
-curl -fsSL https://raw.githubusercontent.com/anas1412/opencode-devjournal/main/install.sh | bash
+opencode plugin opencode-devjournal
 ```
 
-Downloads the plugin, installs dependencies, builds the TypeScript plugin, registers it in `~/.config/opencode/opencode.json`, and creates memory files.
-
-### Or add to opencode.json directly
+Or add it to your `opencode.json` directly:
 ```json
 {
   "plugin": ["opencode-devjournal"]
 }
 ```
-Then run `opencode plugin opencode-devjournal` — OpenCode installs it automatically.
+OpenCode installs and loads it automatically on next start.
 
-### Manual (if you already have the files)
+### From GitHub (no npm needed)
+```bash
+curl -fsSL https://raw.githubusercontent.com/anas1412/opencode-devjournal/main/install.sh | bash
+```
+Downloads the plugin, installs dependencies, builds, registers in opencode.json.
+
+### Manual
 ```bash
 cd opencode-devjournal
 bash install.sh
