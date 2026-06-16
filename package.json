@@ -1,7 +1,26 @@
 {
   "name": "opencode-devjournal",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "OpenCode Memory Dashboard — session timeline, memory files, .env editor",
+  "keywords": [
+    "opencode",
+    "plugin",
+    "dashboard",
+    "memory",
+    "devjournal",
+    "sessions",
+    "timeline"
+  ],
+  "homepage": "https://github.com/anas1412/opencode-devjournal",
+  "bugs": {
+    "url": "https://github.com/anas1412/opencode-devjournal/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anas1412/opencode-devjournal.git"
+  },
+  "author": "anas1412",
+  "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
   "files": [
@@ -11,6 +30,7 @@
     "devjournal.html",
     "install.sh",
     "README.md",
+    "LICENSE",
     "package.json"
   ],
   "scripts": {
