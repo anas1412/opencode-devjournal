@@ -52,7 +52,7 @@ function isServerRunning(): boolean {
 function startServer(): void {
   if (isServerRunning()) return
 
-  const serverPath = join(PROJECT_DIR, "server.js")
+  const serverPath = join(PROJECT_DIR, "server.cjs")
   if (!existsSync(serverPath)) {
     console.error("[DevJournal] server.js not found at", serverPath)
     return

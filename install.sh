@@ -11,7 +11,7 @@ MEMORY_DIR="$OPENCODE_HOME/memory"
 
 # ── Detect: running from repo dir or piped via curl? ────────
 SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd || echo "")"
-if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/server.js" ] && [ -f "$SCRIPT_DIR/devjournal.html" ]; then
+if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/server.cjs" ] && [ -f "$SCRIPT_DIR/devjournal.html" ]; then
   PROJECT_DIR="$SCRIPT_DIR"
   echo "  Installing from local directory: $PROJECT_DIR"
 else
@@ -167,7 +167,7 @@ fi
 echo ""
 echo "  ✓ DevJournal installed!"
 echo "  Dashboard:    http://localhost:4173"
-echo "  Run:          node $PROJECT_DIR/server.js"
+echo "  Run:          node $PROJECT_DIR/server.cjs"
 echo "  Memory:       $MEMORY_DIR"
 echo "  Plugin:       $PLUGIN_PATH"
 echo ""

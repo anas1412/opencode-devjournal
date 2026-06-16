@@ -1,12 +1,20 @@
 {
   "name": "opencode-devjournal",
   "version": "0.1.0",
-  "private": true,
-  "description": "OpenCode Memory Dashboard — plugin for opencode itself",
-  "main": "server.js",
+  "description": "OpenCode Memory Dashboard — session timeline, memory files, .env editor",
+  "type": "module",
+  "main": "dist/index.js",
+  "files": [
+    "dist/",
+    "server.js",
+    "devjournal.html",
+    "install.sh",
+    "package.json"
+  ],
   "scripts": {
-    "start": "node server.js",
+    "start": "node server.cjs",
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "setup": "bash install.sh"
   },
   "dependencies": {
@@ -16,5 +24,8 @@
   "devDependencies": {
     "@types/node": "^25.9.3",
     "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

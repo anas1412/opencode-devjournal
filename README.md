@@ -21,13 +21,12 @@ curl -fsSL https://raw.githubusercontent.com/anas1412/opencode-devjournal/main/i
 Downloads the plugin, installs dependencies, builds the TypeScript plugin, registers it in `~/.config/opencode/opencode.json`, and creates memory files.
 
 ### Or add to opencode.json directly
-If published to npm:
 ```json
 {
   "plugin": ["opencode-devjournal"]
 }
 ```
-Then run `opencode plugin opencode-devjournal` from a terminal.
+Then run `opencode plugin opencode-devjournal` — OpenCode installs it automatically.
 
 ### Manual (if you already have the files)
 ```bash
