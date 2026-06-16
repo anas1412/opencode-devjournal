@@ -1252,13 +1252,6 @@ async function init() {
   await Promise.all([loadSessions(), loadMemory(), loadEnv(), loadStats(), loadQuickMemory()]);
 }
 
-// Attempt to compute HOME for display
-try {
-  const statsRes = await fetch('/api/stats');
-  const statsData = await statsRes.json();
-  // We just need stats to load
-} catch(e) {}
-
 init();
 
 // Auto-refresh stats every 30s
