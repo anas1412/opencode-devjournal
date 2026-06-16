@@ -1,12 +1,39 @@
 const express = require("express")
 const fs = require("fs/promises")
+const fsSync = require("fs")
 const path = require("path")
 const os = require("os")
 
 const app = express()
 const PORT = 4173
 const HOME = os.homedir()
-const MEMORY_DIR = path.join(HOME, ".config", "opencode", "memory")
+const CONFIG_DIR = path.join(HOME, ".config", "opencode")
+const PID_FILE = path.join(CONFIG_DIR, "devjournal.pid")
+const MEMORY_DIR = path.join(CONFIG_DIR, "memory")
+
+// ─── PID FILE / SINGLETON ─────────────────────────────────
+// Check if another instance is already running
+try {
+  if (fsSync.existsSync(PID_FILE)) {
+    const oldPid = parseInt(fsSync.readFileSync(PID_FILE, "utf-8").trim(), 10)
+    if (Number.isFinite(oldPid)) {
+      try { process.kill(oldPid, 0); process.exit(0) } catch {}
+    }
+  }
+} catch {}
+
+// Write PID so the plugin can track us
+fs.mkdir(CONFIG_DIR, { recursive: true }).then(() => {
+  fs.writeFile(PID_FILE, String(process.pid)).catch(() => {})
+}).catch(() => {})
+
+function cleanupPid() {
+  try { fsSync.unlinkSync(PID_FILE) } catch {}
+}
+
+process.on("exit", cleanupPid)
+process.on("SIGINT", () => { cleanupPid(); process.exit(0) })
+process.on("SIGTERM", () => { cleanupPid(); process.exit(0) })
 
 app.use(express.json())
 app.use(express.static(path.join(__dirname)))

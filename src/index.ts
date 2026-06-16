@@ -1,47 +1,101 @@
 import { Plugin, tool } from "@opencode-ai/plugin"
-import { spawn, type ChildProcess } from "node:child_process"
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs"
+import { spawn } from "node:child_process"
+import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from "node:fs"
 import { homedir } from "node:os"
-import { join, dirname } from "node:path"
+import { join, dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const HOME = homedir()
-const MEMORY_DIR = join(HOME, ".config", "opencode", "memory")
+const CONFIG_DIR = join(HOME, ".config", "opencode")
+const MEMORY_DIR = join(CONFIG_DIR, "memory")
+const PID_FILE = join(CONFIG_DIR, "devjournal.pid")
 const JOURNAL_PATH = join(MEMORY_DIR, "journal.json")
+const PORT = 4173
+const DASHBOARD_URL = `http://localhost:${PORT}`
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const PROJECT_DIR = resolve(__dirname, "..")
 
-let serverProcess: ChildProcess | null = null
+// ─── PID FILE / SINGLETON ────────────────────────────────
 
-// resolve is not imported yet — use a manual approach
-function resolve(...parts: string[]): string {
-  let result = parts[0] || ""
-  for (let i = 1; i < parts.length; i++) {
-    if (parts[i].startsWith("/")) {
-      result = parts[i]
-    } else if (result.endsWith("/")) {
-      result += parts[i]
-    } else {
-      result += "/" + parts[i]
+function readPid(): number | null {
+  if (!existsSync(PID_FILE)) return null
+  try {
+    const pid = parseInt(readFileSync(PID_FILE, "utf-8").trim(), 10)
+    return Number.isFinite(pid) ? pid : null
+  } catch {
+    return null
+  }
+}
+
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function isServerRunning(): boolean {
+  const pid = readPid()
+  if (pid === null) return false
+  if (!isProcessAlive(pid)) {
+    // Stale PID — clean up
+    try { unlinkSync(PID_FILE) } catch {}
+    return false
+  }
+  return true
+}
+
+function startServer(): void {
+  if (isServerRunning()) return
+
+  const serverPath = join(PROJECT_DIR, "server.js")
+  if (!existsSync(serverPath)) {
+    console.error("[DevJournal] server.js not found at", serverPath)
+    return
+  }
+
+  const proc = spawn("node", [serverPath], {
+    detached: true,
+    stdio: "ignore",
+    env: { ...process.env },
+  })
+  proc.unref()
+
+  // Wait briefly then check it came up
+  setTimeout(() => {
+    if (!isServerRunning()) {
+      console.error("[DevJournal] server failed to start")
     }
-  }
-  return result
+  }, 1000)
 }
 
-/**
- * Ensure the memory directory and journal file exist.
- */
-function ensureJournal() {
-  mkdirSync(MEMORY_DIR, { recursive: true })
-  if (!existsSync(JOURNAL_PATH)) {
-    writeFileSync(JOURNAL_PATH, "[]", "utf-8")
+async function stopServer(): Promise<void> {
+  const pid = readPid()
+  if (pid === null) return
+
+  try {
+    process.kill(pid, "SIGTERM")
+    // Wait for process to exit
+    for (let i = 0; i < 10; i++) {
+      if (!isProcessAlive(pid)) break
+      await new Promise((r) => setTimeout(r, 100))
+    }
+    // Force kill if still alive
+    if (isProcessAlive(pid)) {
+      process.kill(pid, "SIGKILL")
+    }
+  } catch {
+    // Already dead
   }
+  try { unlinkSync(PID_FILE) } catch {}
 }
 
-/**
- * Read the journal.
- */
+// ─── JOURNAL ──────────────────────────────────────────────
+
 interface JournalEntry {
   id: string
   timestamp: string
@@ -53,6 +107,13 @@ interface JournalEntry {
   [key: string]: unknown
 }
 
+function ensureJournal() {
+  mkdirSync(MEMORY_DIR, { recursive: true })
+  if (!existsSync(JOURNAL_PATH)) {
+    writeFileSync(JOURNAL_PATH, "[]", "utf-8")
+  }
+}
+
 function readJournal(): JournalEntry[] {
   ensureJournal()
   try {
@@ -62,9 +123,6 @@ function readJournal(): JournalEntry[] {
   }
 }
 
-/**
- * Append an entry to the journal.
- */
 function appendToJournal(entry: Record<string, unknown>) {
   const journal = readJournal()
   const newEntry: JournalEntry = {
@@ -77,8 +135,19 @@ function appendToJournal(entry: Record<string, unknown>) {
   writeFileSync(JOURNAL_PATH, JSON.stringify(journal, null, 2), "utf-8")
 }
 
+// ─── PLUGIN ───────────────────────────────────────────────
+
 export const DevJournalPlugin: Plugin = async (ctx) => {
+  // Auto-start the dashboard server when OpenCode loads
+  if (!isServerRunning()) {
+    startServer()
+  }
+
   return {
+    dispose: async () => {
+      await stopServer()
+    },
+
     // ─── TOOLS ────────────────────────────────────────
     tool: {
       devjournal: tool({
@@ -87,9 +156,9 @@ export const DevJournalPlugin: Plugin = async (ctx) => {
         args: {
           action: tool.schema
             .enum(["start", "stop", "status", "log"])
-            .default("start")
+            .default("status")
             .describe(
-              "Action: start dashboard, stop, check status, or log an entry",
+              "Action: check status, stop server, or log an entry",
             ),
           message: tool.schema
             .string()
@@ -103,37 +172,27 @@ export const DevJournalPlugin: Plugin = async (ctx) => {
         async execute({ action, message, tags }) {
           switch (action) {
             case "start": {
-              if (serverProcess) {
-                return "DevJournal is already running at http://localhost:4173"
+              if (isServerRunning()) {
+                return `DevJournal is already running at ${DASHBOARD_URL}`
               }
-              const serverPath = join(PROJECT_DIR, "server.js")
-              if (!existsSync(serverPath)) {
-                return `DevJournal server not found at ${serverPath}. Run install.sh first.`
-              }
-              serverProcess = spawn("node", [serverPath], {
-                detached: true,
-                stdio: "ignore",
-                env: { ...process.env, PATH: process.env.PATH },
-              })
-              serverProcess.unref()
-              return "DevJournal started at http://localhost:4173"
+              startServer()
+              return `DevJournal started at ${DASHBOARD_URL}`
             }
 
             case "stop": {
-              if (serverProcess) {
-                serverProcess.kill("SIGTERM")
-                serverProcess = null
-                return "DevJournal stopped"
-              }
-              return "DevJournal is not running"
+              await stopServer()
+              return "DevJournal stopped"
             }
 
             case "status": {
+              const running = isServerRunning()
+              const pid = readPid()
               const journal = readJournal()
               return JSON.stringify(
                 {
-                  running: serverProcess !== null,
-                  url: "http://localhost:4173",
+                  running,
+                  url: DASHBOARD_URL,
+                  pid: running ? pid : null,
                   entries: journal.length,
                   memoryDir: MEMORY_DIR,
                   lastEntry:
@@ -161,7 +220,7 @@ export const DevJournalPlugin: Plugin = async (ctx) => {
             }
 
             default:
-              return "Usage: devjournal [start|stop|status|log]"
+              return "Usage: devjournal [stop|status|log]"
           }
         },
       }),

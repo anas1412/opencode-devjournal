@@ -15,21 +15,21 @@ A plugin for [OpenCode](https://opencode.ai) that surfaces what's been happening
 
 ### One-liner (recommended)
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<user>/opencode-devjournal/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/anas1412/opencode-devjournal/main/install.sh | bash
 ```
 
-This downloads the plugin, installs dependencies, builds the TypeScript plugin, registers it in `~/.config/opencode/opencode.json`, and creates memory files.
+Downloads the plugin, installs dependencies, builds the TypeScript plugin, registers it in `~/.config/opencode/opencode.json`, and creates memory files.
 
-### Or add to opencode.json directly (requires publishing)
+### Or add to opencode.json directly
 If published to npm:
 ```json
 {
-  "plugin": ["npm:@opencode-ai/devjournal"]
+  "plugin": ["opencode-devjournal"]
 }
 ```
-Then run `devjournal setup` from within OpenCode.
+Then run `opencode plugin opencode-devjournal` from a terminal.
 
-### Manual (if you have the files)
+### Manual (if you already have the files)
 ```bash
 cd opencode-devjournal
 bash install.sh
@@ -37,21 +37,19 @@ bash install.sh
 
 ---
 
-## Start the dashboard
+## How it works
 
-```bash
-node ~/.local/share/opencode-devjournal/server.js
-# → http://localhost:4173
-```
+Install it once. That's it.
 
-Or from inside OpenCode:
-```
-devjournal start
-```
+- **Auto-start** — The dashboard server starts when OpenCode opens, stops when it closes.
+- **Singleton** — Only one DevJournal instance runs at a time. PID file at `~/.config/opencode/devjournal.pid`.
+- **Dashboard** — Open `http://localhost:4173` in your browser while OpenCode is running.
+
+No `devjournal start` commands. No manual server management. Install and forget.
 
 ---
 
-## What it does
+## What you get
 
 | Tab | What you see |
 |-----|-------------|
@@ -59,14 +57,14 @@ devjournal start
 | **Memory** | Editable markdown files (`environment.md`, `preferences.md`) stored in `~/.config/opencode/memory/`. OpenCode loads these every session. |
 | **.Env** | All `.env` files found across your projects. View, edit, and save changes. |
 
-### Navigation
-- **Topbar / sidebar** — switch between Journal, Memory, .Env
+### Dashboard
+- **Left sidebar** — weekly stats (sessions, projects, tasks, files), project tags
 - **Right sidebar** — 28-day activity heatmap + sessions/day chart
-- **Left sidebar** — weekly stats (sessions, projects, tasks, files)
+- **Topbar / sidebar** — switch between Journal, Memory, .Env
 
 ---
 
-## How it works
+## How it's built
 
 ```
 ~/project-a/.tmp/sessions/{id}/context.md   ──┐
@@ -77,18 +75,18 @@ devjournal start
 ~/*/.env                                    ──┘
 ```
 
-DevJournal is two parts:
+Two parts:
 
-1. **Dashboard server** (`server.js`) — Express server that scans sessions, reads/writes memory files, and edits .env files. Serves the dashboard HTML.
-2. **OpenCode plugin** (`dist/index.js`) — Registers a `devjournal` tool (start/stop/status) and hooks into `session.created` events for auto-logging.
+1. **Dashboard server** (`server.js`) — Express server that scans sessions, reads/writes memory files, and edits .env files. Serves the dashboard HTML. PID-tracked for singleton enforcement.
+2. **OpenCode plugin** (`dist/index.js`) — Loaded by OpenCode. Auto-starts the server on load, auto-stops on dispose. Registers a `devjournal` tool (stop/status/log) and hooks into `session.created` events for auto-logging.
 
 ### Files
 
 | File | Role |
 |------|------|
-| `server.js` | Express API + static file server |
+| `server.js` | Express API + static file server, writes PID file |
 | `devjournal.html` | Dashboard UI (single file, embedded CSS+JS) |
-| `src/index.ts` | Plugin source — tools + event hooks |
+| `src/index.ts` | Plugin source — auto-start/stop, tools, event hooks |
 | `dist/index.js` | Compiled plugin (auto-built) |
 | `install.sh` | Set up everything — memory dir, deps, plugin registration |
 
@@ -97,8 +95,8 @@ DevJournal is two parts:
 ## Dev
 
 ```bash
-npm run build    # rebuild the plugin after editing src/index.ts
-npm start        # start dashboard server
+npm run build    # rebuild plugin after editing src/index.ts
+npm start        # start dashboard standalone (without OpenCode)
 bash install.sh  # full reinstall
 ```
 
